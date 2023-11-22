@@ -2,8 +2,9 @@
 import Link from "next/link";
 import logo from "../../../../public/logo.png";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 const links = [
   {
     label: "Torneos",
@@ -26,17 +27,40 @@ const links = [
   },
 ];
 export default function Nagivation() {
-  const data = localStorage.getItem("user");
-  const user = data !== "undefined" ? JSON.parse(data) : null;
-  const isLoggedIn = user;
-  const isAdmin = isLoggedIn && user.role && user.role === "admin";
-  const router = useRouter();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const handleLogout = () => {
+  useEffect(() => {
+    // Add an event listener for the custom event 
+    window.addEventListener('userLoggedIn', (event) => {
+      const user = event.detail.user;
+      setUser(user);
+      setIsLoggedIn(true);
+      console.log("I LISTENED TO AN EVENT", user);
+    });
+
+    window.addEventListener('userLoggedInFromGoogle', (event) => {
+      const user = event.detail.user;
+      setUser(user);
+      setIsLoggedIn(true);
+      console.log("I LISTENED TO AN EVENT FROM GOOGLE AUTH", user);
+    });
+
+  }, []);
+
+   const handleLogout = () => {
     signOut();
     localStorage.removeItem("user");
-    router.push("/login")
-  }
+    setUser(null);
+    setIsLoggedIn(false);
+    router.push("/login");
+  };
+
+  useEffect(() => {
+    console.log("USER ACTUAL", user);
+  }, [])
+  
 
   return (
     <nav className="navbar navbar-expand-lg bg-body-tertiary">
@@ -89,11 +113,11 @@ export default function Nagivation() {
             )}
           </ul>
           {isLoggedIn && (
-          <div className="navbar-text">
-            ¡Hola, {user.name}!
-            <button className="btn btn-danger ms-2" onClick={handleLogout}>Cerrar Sesión</button>
-          </div>
-        )}
+  <div className="navbar-text">
+    ¡Hola, {user.name}!
+    <button className="btn btn-danger ms-2" onClick={handleLogout}>Cerrar Sesión</button>
+  </div>
+)}
         </div>
       </div>
     </nav>

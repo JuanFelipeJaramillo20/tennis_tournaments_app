@@ -16,9 +16,21 @@ export default function TournamentList() {
   const [selectedTournament, setSelectedTournament] = useState(null);
   const user = JSON.parse(localStorage.getItem("user"));
   const isAdmin = user && user.role == "admin";
+
   const fetchData = async () => {
-    const data = await axios.get("/api/tournaments");
-    setTournaments(data.data.data);
+    try {
+      const response = await axios.get("/api/tournaments");
+
+      if (response.status === 200) {
+        setTournaments(response.data.data);
+      } else {
+        console.error("Error fetching tournaments:", response.statusText);
+        setShowErrorAlert(true);
+      }
+    } catch (error) {
+      console.error("Error fetching tournaments:", error.message);
+      setShowErrorAlert(true);
+    }
   };
 
   useEffect(() => {
@@ -45,21 +57,37 @@ export default function TournamentList() {
   const handleDeleteClick = async (id) => {
     try {
       const response = await axios.delete(`/api/tournaments/${id}`);
-      setTournaments((prevTournaments) =>
-        prevTournaments.filter((tournament) => tournament.id !== id)
-      );
+
+      if (response.status === 200) {
+        setTournaments((prevTournaments) =>
+          prevTournaments.filter((tournament) => tournament.id !== id)
+        );
+        setShowSuccessAlert(true);
+      } else {
+        console.error("Error deleting tournament:", response.statusText);
+        setShowErrorAlert(true);
+      }
     } catch (error) {
       console.error("Error deleting tournament:", error.message);
+      setShowErrorAlert(true);
     }
   };
 
   const handleInspect = async (id) => {
     try {
-      const tournament = await axios.get(`/api/tournaments/${id}`);
-      setParticipants(tournament.data.object.participants);
-      setShowParticipants(!showParticipants);
+      const response = await axios.get(`/api/tournaments/${id}`);
+
+      if (response.status === 200) {
+        const tournament = response.data.object;
+        setParticipants(tournament.participants);
+        setShowParticipants(!showParticipants);
+      } else {
+        console.error("Error inspecting tournament:", response.statusText);
+        setShowErrorAlert(true);
+      }
     } catch (error) {
-      console.error(error);
+      console.error("Error inspecting tournament:", error.message);
+      setShowErrorAlert(true);
     }
   };
 
@@ -116,8 +144,8 @@ export default function TournamentList() {
     <div className="container-fluid d-flex justify-content-center align-items-center flex-column mt-5">
       {user ? (
         <>
-        {showSuccessAlert && <SuccessAlert msg="Transacción Aprobada!" />}
-        {showErrorAlert && <ErrorAlert msg="Transacción Cancelada!" />}
+        {showSuccessAlert && <SuccessAlert msg="Transacción / Petición Exitosa!" />}
+        {showErrorAlert && <ErrorAlert msg="Error!" />}
           <h1>Lista de Torneos</h1>
           {isAdmin && (
             <TournamentForm

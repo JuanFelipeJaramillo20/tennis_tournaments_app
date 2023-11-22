@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import SuccessAlert from '../components/SuccessAlert';
+import ErrorAlert from '../components/ErrorAlert';
 import axios from 'axios';
 
 export default function TournamentForm({ onTournamentCreated, onUpdate, selectedTournament, setSelectedTournament }) {
@@ -6,17 +8,25 @@ export default function TournamentForm({ onTournamentCreated, onUpdate, selected
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
   const [date, setDate] = useState('');
+  const [user, setUser] = useState(null);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    setUser(storedUser ? JSON.parse(storedUser) : null);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
 
-      const user = JSON.parse(localStorage.getItem("user"));
       const userId = user.id;
       const formattedDate = (new Date(date)).toISOString();
+      let response;
       if (selectedTournament) {
-        const response = await axios.put(`/api/tournaments/${selectedTournament.id}`, {
+        response = await axios.put(`/api/tournaments/${selectedTournament.id}`, {
           name,
           description,
           location,
@@ -26,7 +36,7 @@ export default function TournamentForm({ onTournamentCreated, onUpdate, selected
 
         onUpdate(response.data.tournament);
       } else {
-        const response = await axios.post('/api/tournaments', {
+        response = await axios.post('/api/tournaments', {
           name,
           description,
           location,
@@ -36,8 +46,15 @@ export default function TournamentForm({ onTournamentCreated, onUpdate, selected
 
         onTournamentCreated(response.data.tournament);
       }
+
+      if (response.status === 200) {
+        setShowSuccessAlert(true);
+      } else {
+        setShowErrorAlert(true);
+      }
     } catch (error) {
       console.error('Error creating or updating tournament:', error.message);
+      setShowErrorAlert(true);
     }
   };
 
@@ -61,6 +78,8 @@ export default function TournamentForm({ onTournamentCreated, onUpdate, selected
 
   return (
     <div className="container">
+      {showSuccessAlert && <SuccessAlert msg="Torneo creado/actualizado exitosamente" />}
+      {showErrorAlert && <ErrorAlert msg="Error al crear o actualizar el torneo" />}
       <h2>Crear/Actualizar Torneo</h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-3">

@@ -2,11 +2,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
+import ErrorAlert from "../components/ErrorAlert";
 import axios from "axios";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showErrorAlert, setShowErrorAlert] = useState(false);
   const router = useRouter();
 
   const { data: session } = useSession();
@@ -14,6 +16,13 @@ export default function LoginPage() {
   useEffect(() => {
     if (session?.user) {
       localStorage.setItem("user", JSON.stringify(session.user));
+      const loginEvent = new CustomEvent("userLoggedInFromGoogle", {
+        detail: {
+          user: session.user,
+        },
+      });
+      window.dispatchEvent(loginEvent);
+      console.log("FIRING EVENT FROM GOOGLE AUTH");
       router.push("/tournament");
     }
   }, [session]);
@@ -21,17 +30,35 @@ export default function LoginPage() {
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
-      const user = await axios.post("/api/auth", { email, password });
-      localStorage.setItem("user", JSON.stringify(user.data.formattedUser));
-      router.push("/tournament");
+        const user = await axios.post("/api/auth", { email, password });
+        localStorage.setItem("user", JSON.stringify(user.data.formattedUser));
+        const loginEvent = new CustomEvent("userLoggedIn", {
+          detail: {
+            user: user.data.formattedUser,
+          },
+        });
+        window.dispatchEvent(loginEvent);
+        router.push("/tournament");
     } catch (error) {
       console.error(error);
+      setShowErrorAlert(true);
     }
   };
 
   const handleSignup = () => {
     router.push("/register");
   };
+
+  useEffect(() => {
+    if(setShowErrorAlert){
+      setTimeout(() => {
+        setShowErrorAlert(false);
+      }, 3000);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [showErrorAlert])
+  
 
   return (
     <section className="vh-100 gradient-custom" suppressHydrationWarning>
@@ -43,15 +70,18 @@ export default function LoginPage() {
               style={{ borderRadius: "1rem" }}
             >
               <div className="card-body p-5 text-center">
+                {showErrorAlert &&<ErrorAlert msg="Credenciales Inválidas. Intenta de nuevo" />}
                 <div className="mb-md-5 mt-md-4 pb-5">
-                  <h2 className="fw-bold mb-2 text-uppercase">Iniciar Sesión</h2>
+                  <h2 className="fw-bold mb-2 text-uppercase">
+                    Iniciar Sesión
+                  </h2>
                   <p className="text-white-50 mb-5">
                     Por favor ingresa tu correo y contraseña
                   </p>
 
                   <form onSubmit={onSubmit}>
                     <div className="form-outline form-white mb-4">
-                    <label className="form-label" htmlFor="typeEmailX">
+                      <label className="form-label" htmlFor="typeEmailX">
                         Email:
                       </label>
                       <input
@@ -63,7 +93,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="form-outline form-white mb-4">
-                    <label className="form-label" htmlFor="typePasswordX">
+                      <label className="form-label" htmlFor="typePasswordX">
                         Contraseña:
                       </label>
                       <input
@@ -106,7 +136,7 @@ export default function LoginPage() {
                     className="text-white-50 fw-bold"
                     onClick={handleSignup}
                   >
-                   Registrarse
+                    Registrarse
                   </a>
                 </div>
               </div>
