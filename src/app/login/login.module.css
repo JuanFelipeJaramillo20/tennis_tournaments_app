@@ -1,0 +1,25 @@
+.login_page {
+    background-color: #fff;
+    padding: 20px;
+    margin: 0 auto;
+    width: 300px;
+  }
+  
+  .login_title {
+    text-align: center;
+  }
+  
+  .login_input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+  }
+  
+  .login_button {
+    background-color: #000;
+    color: #fff;
+    padding: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  
